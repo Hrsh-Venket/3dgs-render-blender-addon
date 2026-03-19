@@ -230,6 +230,41 @@ void main()
     vec4 g_pos_transformed = obj_metadata.transform * vec4(g_pos, 1.0);
     g_pos = g_pos_transformed.xyz;
     
+    // TODO: replace single-matrix transform wiht skeletal skinning
+    /*
+    fetch bones weights
+    (from bone_weights texture, indexed by gaussian_index)
+    ivec4 bone_idx  = fetchBoneIndices(gaussian_index)
+    vec4  bone_wt   = fetchBoneWeights(gaussian_index)
+
+    add per-object bone offset (to avoid bones from colliding)
+    int bone_offset = getBoneOffset(object_id)
+    bone_idx += bone_offset
+
+    fetch 3 bone matrices 3x4 each from bone_matrices texture
+    mat4 m0 = getBoneMatrix(bone_idx.x)
+    mat4 m1 = getBoneMatrix(bone_idx.y)
+    mat4 m2 = getBoneMatrix(bone_idx.z)
+    mat4 m3 = getBoneMatrix(bone_idx.w)
+
+    linear blend skinning for position
+    mat4 skinMatrix = bone_wt.x * m0 + bone_wt.y * m1
+                    + bone wt.z * m2 + bone_wt.w * m3
+    g_pos = (obj_metadata.transform * skinMatrix * vec4(g_pos_rest, 1.0)).xyz
+
+
+
+    skinning for rotation 
+      extract rotation component from skinMatrix
+      mat3 skinRotation = extract_rotation(mat3(skinMatrix))
+      convert to quaternion
+      vec4 skin_quat = mat3_to_quaternion(skinRotation)
+      compose with the gaussian's own rotation
+      g_rot = quaternion_multiply(skin_quat, g_rot)
+
+    (opt) skinning for scale (not needed)
+       */
+    
     vec4 g_rot = vec4(
         texelFetch(gaussian_data, indexTo3D(base_index + 3, texture_width, texture_height), 0).r,
         texelFetch(gaussian_data, indexTo3D(base_index + 4, texture_width, texture_height), 0).r,

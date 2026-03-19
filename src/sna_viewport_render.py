@@ -150,6 +150,16 @@ def sna_viewport_render_A3941():
         except Exception as e:
             print(f"Transform check error: {e}")
             return False
+    
+    # TODO: def check_any_armature_poses_changed()
+    # def check_any_armature_poses_changed()
+    #     for each rigged_gaussian in cache:
+    #         armature = cache_entry['armature']
+    #         current_bone_matrices = [bone.matrix for bone in armature.poses.bones]
+    #         compare vs stored last_bone_matrices
+    #         if any bone moved:
+    #             return True
+    #     return False
 
     def update_metadata_texture():
         """Recreate metadata texture with current transforms for all objects"""
@@ -191,6 +201,16 @@ def sna_viewport_render_A3941():
         except Exception as e:
             print(f"Metadata update error: {e}")
             return False
+
+    # TODO add update_bone_matrices_texture()
+    # def update_bone_matrices_texture()
+    #     for each rigged object:
+    #         armature = cache_entry['armature']
+    #         for each bone in armature.pose.bones:
+    #             final_matrix = bone.matrix @ bone.bone.matrix_local.inverted()
+    #             (this gives the deformation matrix: rest_pose -> current_pose
+    #         flatten al bone matrices into float array
+    #     upload as 2D R32F texture -> bpy,gaussian_bone_texture
 
     def update_depth_sorting():
         """Global depth sorting for all objects combined"""
@@ -272,6 +292,7 @@ def sna_viewport_render_A3941():
         except Exception as e:
             print(f"Global depth sorting error: {e}")
             return False
+    # TODO: modify depth sorting to use skinned positions for rigged objects
 
     def draw_gaussians():
         """Multi-object rendering with automatic cache reconstruction"""
@@ -301,6 +322,8 @@ def sna_viewport_render_A3941():
                     return
             # Check if any object transforms changed
             transforms_changed = check_any_transforms_changed()
+            # TODO: call check_any_armature_poses_changed
+            # if armature_changed: update bone_matricies_texture()
             # Update metadata texture if any object moved
             if transforms_changed:
                 update_metadata_texture()
