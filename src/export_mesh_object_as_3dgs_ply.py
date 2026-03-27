@@ -18,6 +18,7 @@ from math import pi
 from mathutils import Matrix
 from typing import Optional
 from .important import *
+from .extract_gaussian_from_evaluated_mesh import *
 
 
 class SNA_OT_Dgs_Render_Export_Mesh_Object_As_3Dgs_Ply_Ce2F7(bpy.types.Operator):
@@ -53,6 +54,14 @@ class SNA_OT_Dgs_Render_Export_Mesh_Object_As_3Dgs_Ply_Ce2F7(bpy.types.Operator)
                         # Make sure the object is selected and active
                         bpy.context.view_layer.objects.active = obj
                         obj.select_set(True)
+                        
+                        # Call extract_guassian_data_from_evaluated_mesh so rot_0,1,2,3 are updated
+                        gaussian_info = extract_gaussian_data_from_evaluated_mesh(obj)
+                        rotated_quats = gaussian_info['rotations']
+                        for i, attr_name in enumerate(['rot_0', 'rot_1', 'rot_2', 'rot_3']):
+                            if attr_name in obj.data.attributes:
+                                obj.data.attributes[attr_name].data.foreach_set("value", rotated_quats[:, i].copy())
+                        
                         # Apply all modifiers
                         for modifier in obj.modifiers[:]:  # [:] creates a copy of the list to avoid modification issues
                             try:
