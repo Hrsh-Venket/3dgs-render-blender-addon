@@ -102,3 +102,5 @@ from .align_active_to_z_axis import *
 
 from .add_to_view3d_mt_object_apply import *
 from .generate_hq_object import *
+
+from .visualize_weights import *
