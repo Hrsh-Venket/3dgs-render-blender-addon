@@ -1,5 +1,6 @@
 import bpy
 import numpy as np
+# Adjust this function to bind to the proxy mesh and move accordingly
 
 
 def check_mesh_has_gaussian_attributes(mesh_obj):

@@ -778,32 +778,34 @@ def sna_export_3dgs_function_interface_CDF59(layout_function, ):
     box_E30D3.scale_y = 1.0
     if not True: box_E30D3.operator_context = "EXEC_DEFAULT"
     op = box_E30D3.operator('sna.dgs_render_export_mesh_object_as_3dgs_ply_ce2f7', text='Export 3DGS', icon_value=load_preview_icon(os.path.join(os.path.dirname(__file__), 'assets', 'export.svg')), emboss=True, depress=False)
-    if (property_exists("bpy.context.view_layer.objects.active", globals(), locals())
-        and bpy.context.view_layer.objects.active
-        and bpy.context.view_layer.objects.active.type == 'MESH'
-        and len(bpy.context.view_layer.objects.active.vertex_groups) >0):
-        box_WVIS = layout_function.box()
-        box_WVIS.alert = False
-        box_WVIS.enabled = True
-        box_WVIS.active = True
-        box_WVIS.use_property_split = False
-        box_WVIS.use_property_decorate = False
-        box_WVIS.alignment = 'Expand'.upper()
-        box_WVIS.scale_x = 1.0
-        box_WVIS.scale_y = 1.0
-        if not True: box_WVIS.operator_context = "EXEC_DEFAULT"
-        if getattr(bpy, '_weight_vis_running', False):
-            op = box_WVIS.operator('sna.dgs_render_visualize_weights', 
-                                   text='Stop Weight Visualisation',
-                                   icon_value=0,
-                                   emboss=True,
-                                   depress=True)
-        else:
-            op = box_WVIS.operator('sna.dgs_render_visualize_weights', 
-                                   text='Visualize Weights',
-                                   icon_value=0,
-                                   emboss=True,
-                                   depress=False)
+
+    # TODO: Uncomment if you adjust src/visualize_weights.py to display indrect rigging of gaussians
+    # if (property_exists("bpy.context.view_layer.objects.active", globals(), locals())
+    #     and bpy.context.view_layer.objects.active
+    #     and bpy.context.view_layer.objects.active.type == 'MESH'
+    #     and len(bpy.context.view_layer.objects.active.vertex_groups) >0):
+    #     box_WVIS = layout_function.box()
+    #     box_WVIS.alert = False
+    #     box_WVIS.enabled = True
+    #     box_WVIS.active = True
+    #     box_WVIS.use_property_split = False
+    #     box_WVIS.use_property_decorate = False
+    #     box_WVIS.alignment = 'Expand'.upper()
+    #     box_WVIS.scale_x = 1.0
+    #     box_WVIS.scale_y = 1.0
+    #     if not True: box_WVIS.operator_context = "EXEC_DEFAULT"
+    #     if getattr(bpy, '_weight_vis_running', False):
+    #         op = box_WVIS.operator('sna.dgs_render_visualize_weights', 
+    #                                text='Stop Weight Visualisation',
+    #                                icon_value=0,
+    #                                emboss=True,
+    #                                depress=True)
+    #     else:
+    #         op = box_WVIS.operator('sna.dgs_render_visualize_weights', 
+    #                                text='Visualize Weights',
+    #                                icon_value=0,
+    #                                emboss=True,
+    #                                depress=False)
 
 def sna_animate_function_interface_57F9E(layout_function, ):
     box_DFEF6 = layout_function.box()

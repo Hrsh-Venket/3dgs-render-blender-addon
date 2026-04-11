@@ -3,7 +3,7 @@ import numpy as np
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from .extract_gaussian_from_evaluated_mesh import check_mesh_has_gaussian_attributes
-from .sna_c2_refresh_all import sna_c2_refresh_all_4D367
+# from .sna_c2_refresh_all import sna_c2_refresh_all_4D367
 from .sna_texture_creation import sna_texture_creation_FD1B2
 
 def barycentric_coords(p, a, b, c):
@@ -158,32 +158,49 @@ class Bind_Gaussian_Splat_To_Proxy_Mesh(bpy.types.Operator):
         # Store proxy reference
         gaussian_obj["_bind_proxy_mesh"] = proxy_mesh_obj.name
 
+        # Print first 100 bound gaussians
+        print(f"\n{'='*80}")
+        print(f"Binding Summary: {gaussian_obj.name} -> {proxy_mesh_obj.name}")
+        print(f"Total gaussians: {num_verts}, Proxy faces: {len(triangles)}")
+        print(f"{'='*80}")
+        n = min(100, num_verts)
+        for i in range(n):
+            print(f"  [{i:4d}] face={int(face_indices[i]):4d}  "
+                  f"bary=({bary_u[i]:.3f}, {bary_v[i]:.3f}, {bary_w[i]:.3f})  "
+                  f"offset=({offset_t[i]:.4f}, {offset_b[i]:.4f}, {offset_n[i]:.4f})  "
+                  f"rest_q=({rest_quat_w[i]:.3f}, {rest_quat_x[i]:.3f}, {rest_quat_y[i]:.3f}, {rest_quat_z[i]:.3f})")
+        if num_verts > 100:
+            print(f"  ... ({num_verts - 100} more)")
+        print(f"{'='*80}\n")
+
         self.report({'INFO'}, f"Bound {num_verts} gaussians to {len(triangles)} proxy faces")
         return {'FINISHED'}
 
     def invoke(self, context, event):
         return self.execute(context)
 
+# TODO: write Compute_New_World_Positions
+# def Compute_New_World_Positions
+#   read proxy mesh's current deformed state
+#   read each gaussian's _bind_face_idx, barycentric roods, tbn offsets
+#   computes new world position
 
-class Refresh_Proxy_Gaussians(bpy.types.Operator):
-    bl_idname = "sna.refresh_proxy_gaussians"
-    bl_label = "3DGS Render: Refresh Proxy Gaussians"
-    bl_description = "Re-extract gaussian data from evaluated proxy mesh and rebuild GPU textures"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        for obj in bpy.data.objects:
-            if obj.get("_bind_proxy_mesh"):
-                return True
-        cls.poll_message_set("No proxy-bound gaussian objects found")
-        return False
-
-    def execute(self, context):
-        sna_c2_refresh_all_4D367(True, False, True)
-        sna_texture_creation_FD1B2()
-        self.report({'INFO'}, "Proxy gaussians refreshed")
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        return self.execute(context)
+# class Refresh_Proxy_Gaussians(bpy.types.Operator):
+#     bl_idname = "sna.refresh_proxy_gaussians"
+#     bl_label = "3DGS Render: Refresh Proxy Gaussians"
+#     bl_description = "Re-extract gaussian data from evaluated proxy mesh and rebuild GPU textures"
+#     bl_options = {"REGISTER", "UNDO"}
+#
+#     @classmethod
+#     def poll(cls, context):
+#         for obj in bpy.data.objects:
+#             if obj.get("_bind_proxy_mesh"):
+#                 return True
+#         cls.poll_message_set("No proxy-bound gaussian objects found")
+#         return False
+#
+#     def execute(self, context):
+#         sna_c2_refresh_all_4D367(True, False, True)
+#         sna_texture_creation_FD1B2()
+#         self.report({'INFO'}, "Proxy gaussians refreshed")
+#         return {'FINISHED'}

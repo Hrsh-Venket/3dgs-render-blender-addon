@@ -289,7 +289,9 @@ def register():
     bpy.utils.register_class(SNA_OT_Dgs_Render_Apply_Decimate_Modifier_7A32C)
     bpy.utils.register_class(SNA_OT_Dgs_Render_Remove_Remove_By_Size_Modifier_3A0E5)
     bpy.utils.register_class(SNA_OT_Dgs_Render_Apply_Remove_By_Size_Modifier_6Dbab)
-    bpy.utils.register_class(SNA_OT_Dgs_Render_Visualize_Weights)
+    # bpy.utils.register_class(SNA_OT_Dgs_Render_Visualize_Weights)
+    bpy.utils.register_class(Bind_Gaussian_Splat_To_Proxy_Mesh)
+    # bpy.utils.register_class(Refresh_Proxy_Gaussians)
 
 
 def unregister():
@@ -360,4 +362,6 @@ def unregister():
     bpy.utils.unregister_class(SNA_OT_Dgs_Render_Apply_Decimate_Modifier_7A32C)
     bpy.utils.unregister_class(SNA_OT_Dgs_Render_Remove_Remove_By_Size_Modifier_3A0E5)
     bpy.utils.unregister_class(SNA_OT_Dgs_Render_Apply_Remove_By_Size_Modifier_6Dbab)
-    bpy.utils.unregister_class(SNA_OT_Dgs_Render_Visualize_Weights)
+    # bpy.utils.unregister_class(SNA_OT_Dgs_Render_Visualize_Weights)
+    # bpy.utils.unregister_class(Refresh_Proxy_Gaussians)
+    bpy.utils.unregister_class(Bind_Gaussian_Splat_To_Proxy_Mesh)
