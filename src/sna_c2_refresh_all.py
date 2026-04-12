@@ -486,6 +486,18 @@ def sna_c2_refresh_all_4D367(REFRESH_ALL_OBJECTS, UPDATE_TRANSFORMS, USE_EVALUAT
                         norms = np.linalg.norm(new_rotations, axis=1, keepdims=True)
                         new_rotations /= np.maximum(norms, 1e-10)
                         gaussian_data[:, 3:7] = new_rotations
+                        
+                        # Write updated positions back to the source mesh vertices
+                        source_obj.data.vertices.foreach_set("co", new_positions.flatten())
+
+                        # Write updated rotations back to source mesh attributes
+                        for i, attr_name in enumerate(["rot_0", "rot_1", "rot_2", "rot_3"]):
+                            if attr_name in [a.name for a in source_obj.data.attributes]:
+                                source_obj.data.attributes[attr_name].data.foreach_set("value", new_rotations[:, i])
+
+                        source_obj.data.update()
+
+
                         print(f"    Patched {num_gaussians} gaussian positions/rotations from proxy '{source_obj['_bind_proxy_mesh']}'")
                 except ImportError as e:
                     print(f"    PROXY PATCH FAILED: Could not import bind module: {e}")
