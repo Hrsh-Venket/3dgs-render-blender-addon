@@ -25,6 +25,38 @@ class SNA_PT_DGS_RENDER_BY_KIRI_ENGINE_A02CB(bpy.types.Panel):
         layout = self.layout
         layout_function = layout
         sna_dgs_render__main_function_menu_019C7(layout_function, )
+
+        # --- Proxy Rigging ---
+        box = layout.box()
+        box.label(text='Proxy Rigging', icon='ARMATURE_DATA')
+
+        col = box.column(align=True)
+        sel = context.selected_objects
+        active = context.active_object
+        if len(sel) == 2 and active and active.type == 'MESH':
+            other = [o for o in sel if o != active][0]
+            col.label(text=f'Gaussian: {active.name}', icon='OUTLINER_DATA_MESH')
+            col.label(text=f'Proxy: {other.name}', icon='MESH_GRID')
+        else:
+            col.label(text='Select 2 meshes (active = gaussian)', icon='INFO')
+
+        row = box.row()
+        row.scale_y = 1.5
+        row.operator('sna.bind_gaussian_splat_to_proxy_mesh', text='Bind to Proxy', icon='CONSTRAINT_BONE')
+
+        row = box.row()
+        row.scale_y = 1.3
+        # row.operator('sna.refresh_proxy_gaussians', text='Refresh Proxy Gaussians', icon='FILE_REFRESH')
+
+        bound = [o for o in bpy.data.objects if o.get('_bind_proxy_mesh')]
+        if bound:
+            sub = box.box()
+            sub.label(text=f'Bound Objects ({len(bound)}):', icon='CHECKMARK')
+            for obj in bound:
+                row = sub.row()
+                row.label(text=obj.name, icon='OUTLINER_DATA_MESH')
+                row.label(text=f'-> {obj["_bind_proxy_mesh"]}')
+
         layout_function = layout
         sna_about_kiri_links_docs_3dgs_D02EC(layout_function, )
 

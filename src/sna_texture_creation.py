@@ -1,4 +1,5 @@
 from .important import *
+from .extract_gaussian_from_evaluated_mesh import *
 
 def sna_texture_creation_FD1B2():
     # ========== VARIABLES (EDIT THESE) ==========
@@ -9,137 +10,12 @@ def sna_texture_creation_FD1B2():
     import os
     # ========== FALLBACK FUNCTIONS FOR CORRUPTED DATA ==========
 
-    def extract_attribute_data(mesh_data, attr_name):
-        """Extract data from mesh attribute by name - optimized version"""
-        if attr_name not in [attr.name for attr in mesh_data.attributes]:
-            return None
-        attr = mesh_data.attributes[attr_name]
-        # Use foreach_get for much faster extraction
-        data_array = np.zeros(len(attr.data), dtype=np.float32)
-        attr.data.foreach_get("value", data_array)
-        return data_array
-
-    def extract_gaussian_data_from_evaluated_mesh(mesh_obj):
-        """Extract and process gaussian data from EVALUATED mesh object attributes"""
-        # Get evaluated mesh data
-        depsgraph = bpy.context.evaluated_depsgraph_get()
-        evaluated_object = mesh_obj.evaluated_get(depsgraph)
-        evaluated_mesh = evaluated_object.data
-        # Extract positions from evaluated vertices - optimized version
-        num_points = len(evaluated_mesh.vertices)
-        if num_points == 0:
-            raise ValueError("Evaluated mesh has no vertices")
-        # Use foreach_get for fast vertex coordinate extraction
-        positions = np.zeros(num_points * 3, dtype=np.float32)
-        evaluated_mesh.vertices.foreach_get("co", positions)
-        positions = positions.reshape(-1, 3)
-        # Get available attributes from evaluated mesh
-        available_attrs = [attr.name for attr in evaluated_mesh.attributes]
-        # Extract spherical harmonics from evaluated mesh
-        if all(attr in available_attrs for attr in ['f_dc_0', 'f_dc_1', 'f_dc_2']):
-            dc_0 = extract_attribute_data(evaluated_mesh, 'f_dc_0')
-            dc_1 = extract_attribute_data(evaluated_mesh, 'f_dc_1')
-            dc_2 = extract_attribute_data(evaluated_mesh, 'f_dc_2')
-            features_dc = np.column_stack([dc_0, dc_1, dc_2])
-            # Find f_rest fields
-            f_rest_fields = [attr for attr in available_attrs if attr.startswith('f_rest_')]
-            f_rest_fields = sorted(f_rest_fields, key=lambda x: int(x.split('_')[-1]))
-            if f_rest_fields:
-                features_extra_list = []
-                for field in f_rest_fields:
-                    data = extract_attribute_data(evaluated_mesh, field)
-                    if data is not None:
-                        features_extra_list.append(data)
-                if features_extra_list:
-                    features_extra = np.column_stack(features_extra_list)
-                    num_f_rest = len(f_rest_fields)
-                    # Determine degree and coefficients to use
-                    if num_f_rest >= 45:
-                        actual_degree = 3
-                        coeffs_to_use = 45
-                    elif num_f_rest >= 24:
-                        actual_degree = 2  
-                        coeffs_to_use = 24
-                    elif num_f_rest >= 9:
-                        actual_degree = 1
-                        coeffs_to_use = 9
-                    else:
-                        actual_degree = 0
-                        coeffs_to_use = 0
-                    if coeffs_to_use > 0:
-                        features_extra_used = features_extra[:, :coeffs_to_use]
-                        coeffs_per_degree = (actual_degree + 1) ** 2 - 1
-                        features_extra_reshaped = features_extra_used.reshape((num_points, 3, coeffs_per_degree))
-                        features_extra_reshaped = np.transpose(features_extra_reshaped, [0, 2, 1])
-                        features_dc_reshaped = features_dc.reshape(-1, 1, 3)
-                        all_features = np.concatenate([features_dc_reshaped, features_extra_reshaped], axis=1)
-                        sh_coeffs = all_features.reshape(num_points, -1)
-                    else:
-                        sh_coeffs = features_dc
-                else:
-                    sh_coeffs = features_dc
-            else:
-                sh_coeffs = features_dc
-        else:
-            # Default SH coeffs if not found
-            print(f"Warning: f_dc attributes not found on evaluated mesh, using defaults")
-            sh_coeffs = np.ones((num_points, 3)) * 0.28209479177387814
-        # Extract scales from evaluated mesh
-        if all(attr in available_attrs for attr in ['scale_0', 'scale_1', 'scale_2']):
-            scale_0 = extract_attribute_data(evaluated_mesh, 'scale_0')
-            scale_1 = extract_attribute_data(evaluated_mesh, 'scale_1')
-            scale_2 = extract_attribute_data(evaluated_mesh, 'scale_2')
-            scales = np.column_stack([scale_0, scale_1, scale_2])
-            scales = np.exp(scales)  # Apply exponential
-        else:
-            print(f"Warning: scale attributes not found on evaluated mesh, using defaults")
-            scales = np.ones((num_points, 3)) * 0.01
-        # Extract rotations from evaluated mesh
-        if all(attr in available_attrs for attr in ['rot_0', 'rot_1', 'rot_2', 'rot_3']):
-            rot_0 = extract_attribute_data(evaluated_mesh, 'rot_0')
-            rot_1 = extract_attribute_data(evaluated_mesh, 'rot_1')
-            rot_2 = extract_attribute_data(evaluated_mesh, 'rot_2')
-            rot_3 = extract_attribute_data(evaluated_mesh, 'rot_3')
-            rotations = np.column_stack([rot_0, rot_1, rot_2, rot_3])
-            # Normalize quaternions
-            norms = np.linalg.norm(rotations, axis=1, keepdims=True)
-            rotations = rotations / norms
-        else:
-            print(f"Warning: rotation attributes not found on evaluated mesh, using defaults")
-            rotations = np.zeros((num_points, 4))
-            rotations[:, 0] = 1.0  # Identity quaternion
-        # Extract opacity from evaluated mesh
-        if 'opacity' in available_attrs:
-            opacity_raw = extract_attribute_data(evaluated_mesh, 'opacity')
-            opacity = 1.0 / (1.0 + np.exp(-opacity_raw))  # Apply sigmoid
-        else:
-            print(f"Warning: opacity attribute not found on evaluated mesh, using defaults")
-            opacity = np.ones(num_points)
-        return {
-            'num_points': num_points,
-            'positions': positions,
-            'scales': scales,
-            'rotations': rotations,
-            'opacities': opacity,
-            'sh_coeffs': sh_coeffs,
-            'sh_dim': sh_coeffs.shape[1]
-        }
-
     def find_source_object_by_uuid(source_uuid):
         """Find Blender object by gaussian_source_uuid"""
         for obj in bpy.data.objects:
             if obj.get("gaussian_source_uuid") == source_uuid:
                 return obj
         return None
-
-    def check_mesh_has_gaussian_attributes(mesh_obj):
-        """Check if mesh object has basic gaussian attributes"""
-        if not mesh_obj or not mesh_obj.data:
-            return False
-        # Check for basic gaussian attributes
-        required_attrs = ['f_dc_0', 'f_dc_1', 'f_dc_2']
-        available_attrs = [attr.name for attr in mesh_obj.data.attributes]
-        return all(attr in available_attrs for attr in required_attrs)
 
     def refresh_object_from_blender_source(obj):
         """Refresh gaussian data from Blender mesh source - fallback function"""
@@ -282,10 +158,15 @@ def sna_texture_creation_FD1B2():
                     sh_degree = obj.get("sh_degree", 48)
                     ply_filepath = obj.get("ply_filepath", "")
                     if not data_bytes or gaussian_count == 0:
-                        print(f"  ⚠️  {obj.name}: Missing data or zero count, skipping")
+                        print(f"{obj.name}: Missing data or zero count, skipping")
                         continue
                     # Try to reconstruct numpy array from bytes
                     try:
+                        # Ensure we have raw bytes (IDPropertyArray may not
+                        # expose the buffer protocol correctly for large arrays)
+                        if not isinstance(data_bytes, (bytes, bytearray)):
+                            # TODO: Check edge cases as bytes() creates an immuatble array
+                            data_bytes = bytes(data_bytes)
                         gaussian_data = np.frombuffer(data_bytes, dtype=np.float32).reshape(gaussian_count, 59)
                         # Validate data integrity
                         if gaussian_data.shape != (gaussian_count, 59):
@@ -293,9 +174,9 @@ def sna_texture_creation_FD1B2():
                         # Check for reasonable values (basic sanity check)
                         if np.any(np.isnan(gaussian_data)) or np.any(np.isinf(gaussian_data)):
                             raise ValueError("Data contains NaN or infinity values")
-                        print(f"  ✅ {obj.name}: Successfully reconstructed from cache")
+                        print(f" {obj.name}: Successfully reconstructed from cache")
                     except (ValueError, TypeError) as e:
-                        print(f"  ❌ {obj.name}: Cache data corrupted ({e})")
+                        print(f"  {obj.name}: Cache data corrupted ({e})")
                         print(f"     Attempting fallback refresh...")
                         # Determine source type and attempt fallback
                         is_blender_source = obj.get("source_mesh_uuid") is not None
@@ -336,7 +217,7 @@ def sna_texture_creation_FD1B2():
                     }
                     total_gaussians += gaussian_count
                 except Exception as e:
-                    print(f"  ❌ {obj.name}: Reconstruction failed completely: {e}")
+                    print(f" {obj.name}: Reconstruction failed completely: {e}")
                     continue
             if bpy.gaussian_object_cache:
                 cache_status = f"Cache reconstructed: {len(bpy.gaussian_object_cache)} objects, {total_gaussians:,} gaussians"
@@ -382,6 +263,7 @@ def sna_texture_creation_FD1B2():
         merged_gaussian_data = np.concatenate(all_gaussian_data, axis=0)
         total_gaussians = len(merged_gaussian_data)
         print(f"Total merged gaussians: {total_gaussians:,}")
+
         # ========== CREATE GLOBAL 3D GAUSSIAN TEXTURE ==========
         total_floats = merged_gaussian_data.size
         max_texture_dim = 16384
@@ -451,41 +333,6 @@ def sna_texture_creation_FD1B2():
             format='R32F', 
             data=metadata_buffer
         )
-        # TODO add code to create bone weights_texture and bone matrices texture
-        # 
-        # CREATE BONE WEIGHTS TEXTURE
-        # (only needed if any object is rigged)
-        #
-        # for each (obj_name, obj_data) in cache:
-        #   if obj_data.get('is_rigged'):
-        #       all_bone_weights.append(obj_data['bone_weights'])  # [N x 8]
-        #   else:
-        #       # Unrigged: fill with zeros (no bone influence)
-        #       all_bone_weights.append(zeros(N, 8))
-        #
-        # merged_weights = concatenate(all_bone_weights)  # [Total x 8]
-        # flatten, pad, upload as 2D R32F texture -> bpy.gaussian_bone_weights_texture
-        #
-        #
-        # CREATE BONE MATRICES TEXTURE
-        # (initial bone matrices, will be updated per-frame)
-        #
-        # total_bones = 0
-        # bone_offset_per_object = []
-        # for each (obj_name, obj_data) in cache:
-        #   if obj_data.get('is_rigged'):
-        #       n_bones = len(obj_data['bone_names'])
-        #       bone_offset_per_object.append(total_bones)
-        #       total_bones += n_bones
-        #   else:
-        #       bone_offset_per_object.append(-1)
-        #
-        # bone_matrices_data = zeros(total_bones * 12)  # 3x4 per bone
-        # upload as 2D R32F texture -> bpy.gaussian_bone_texture
-
-        # Store bone offsets in metadata (extend the 15-float format, or new texture)
-        # bpy.gaussian_bone_offsets = bone_offset_per_object
-
         # ========== STORE GLOBALLY ==========
         bpy.gaussian_texture = gaussian_texture
         bpy.gaussian_texture_width = texture_width
