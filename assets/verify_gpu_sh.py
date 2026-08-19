@@ -16,15 +16,25 @@ import bpy
 import numpy as np
 
 
-ADDON_ROOT = os.path.dirname(bpy.context.preferences.addons[
-    "bl_ext.user_default.dgs_render_by_kiri_engine"
-].module if hasattr(bpy.context.preferences.addons.get("bl_ext.user_default.dgs_render_by_kiri_engine", None), "module") else __file__)
+# Locate the addon by looking for any enabled extension whose preferences
+# expose the sna_use_gpu_sh_rotation toggle. Works regardless of the
+# extension slug so the same script runs on renamed forks.
+def _find_addon_root():
+    for key in bpy.context.preferences.addons.keys():
+        try:
+            entry = bpy.context.preferences.addons[key]
+            prefs = entry.preferences
+        except Exception:
+            continue
+        if hasattr(prefs, "sna_use_gpu_sh_rotation") and hasattr(entry, "module"):
+            root = os.path.dirname(entry.module)
+            if os.path.isdir(root):
+                return root
+    # Last-ditch fallback: assume this script lives inside assets/
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Fallback: derive from common install location
-if not os.path.isdir(ADDON_ROOT):
-    ADDON_ROOT = os.path.expanduser(
-        "~/Library/Application Support/Blender/5.1/extensions/user_default/dgs_render_by_kiri_engine"
-    )
+
+ADDON_ROOT = _find_addon_root()
 
 print(f"Addon root: {ADDON_ROOT}")
 assets_dir = os.path.join(ADDON_ROOT, "assets")
